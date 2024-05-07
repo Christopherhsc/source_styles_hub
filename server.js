@@ -33,6 +33,6 @@ app.use("/search", searchRouter);
 const port = process.env.PORT || 3000;
 
 // Listen using HTTPS server
-app.listen(app).listen(port, '0.0.0.0', () => {
-  console.log(`HTTPS server running on port ${port}`);
-});
+app.listen(port, () => {
+  console.log(`Server running at ${port}`);
+})
