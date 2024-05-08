@@ -1,7 +1,7 @@
 const express = require("express");
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
-
+const axios = require('axios');
 
 const saltRounds = 10;
 
@@ -115,3 +115,39 @@ exports.createUser =
       });
   });
 
+  exports.proxyProfileImage = async (req, res) => {
+    const { userId } = req.query;
+  
+    if (!userId) {
+      return res.status(400).json({ message: "Missing 'userId' query parameter" });
+    }
+  
+    try {
+      const user = await User.findById(userId);
+      if (!user || !user.imageUrl) {
+        return res.status(404).json({ message: "User not found or missing profile image" });
+      }
+  
+      const imageUrl = user.imageUrl;
+  
+      if (imageUrl.startsWith('data:')) {
+        // If the image URL is already in base64 format
+        const base64Data = imageUrl.split(',')[1];
+        const imgBuffer = Buffer.from(base64Data, 'base64');
+        const mimeType = imageUrl.split(';')[0].split(':')[1];
+  
+        res.writeHead(200, {
+          'Content-Type': mimeType,
+          'Content-Length': imgBuffer.length
+        });
+        res.end(imgBuffer);
+      } else {
+        // Proxy external image using axios
+        const response = await axios.get(imageUrl, { responseType: 'stream' });
+        response.data.pipe(res);
+      }
+    } catch (err) {
+      console.error('Error fetching profile image:', err.message);
+      res.status(500).json({ message: 'Failed to fetch image' });
+    }
+  };

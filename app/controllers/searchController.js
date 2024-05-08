@@ -16,7 +16,7 @@ exports.search = async (req, res) => {
     const users = await User.find({
       $or: [
         { username: { $regex: term, $options: "i" } },
-        { email: { $regex: term, $options: "i" } },
+        // { email: { $regex: term, $options: "i" } },
       ],
     });
     res.json({ snippets, users });
