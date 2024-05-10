@@ -2,7 +2,9 @@ const mongoose = require("mongoose");
 
 const snippetSchema = new mongoose.Schema({
   title: String,
-  picture: String, // Changed from 'croppedImage' to 'picture'
+  picture: String,
+  pictureWidth: Number,
+  pictureHeight: Number,
   description: String,
   snippetTemplate: String,
   snippetStyle: String,

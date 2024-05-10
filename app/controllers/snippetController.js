@@ -40,6 +40,8 @@ exports.createSnippet = (req, res) => {
   const {
     title,
     picture,
+    pictureWidth,
+    pictureHeight,
     description,
     snippetTemplate,
     snippetStyle,
@@ -52,6 +54,8 @@ exports.createSnippet = (req, res) => {
   const newSnippet = new Snippet({
     title,
     picture,
+    pictureWidth,
+    pictureHeight,
     description,
     snippetTemplate,
     snippetStyle,
