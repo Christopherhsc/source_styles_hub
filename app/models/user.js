@@ -10,7 +10,7 @@ const UserSchema = new Schema({
     type: String,
     unique: [true, "Email already exists!"],
     required: [true, "Email is required!"],
-    lowercase: true, 
+    lowercase: true,
     trim: true,
   },
   password: {
@@ -23,6 +23,12 @@ const UserSchema = new Schema({
     type: String,
     required: [true, "RegistrationMethod is required!"],
   },
+  visitors: [
+    {
+      visitorId: String,
+      lastVisit: { type: Date, default: Date.now },
+    },
+  ],
 });
 
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
