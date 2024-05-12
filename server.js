@@ -5,7 +5,14 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 
-app.use(cors());
+// CORS configuration
+const corsOptions = {
+  origin: 'https://sourcestylehub.com', 
+  methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json({ limit: "10mb" }));
 
 mongoose.connect(process.env.MONGODB_URI, {});
@@ -13,14 +20,10 @@ mongoose.connection.on("connected", () => {
   console.log("Connected to MongoDB");
 });
 
+// Simple test route
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
-
-app.use(cors({
-  origin: ['https://sourcestylehub.com'],
-  methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH']
-}));
 
 const userRouter = require("./app/routes/users");
 const snippetRouter = require("./app/routes/snippets");
@@ -31,8 +34,6 @@ app.use("/snippets", snippetRouter);
 app.use("/search", searchRouter);
 
 const port = process.env.PORT || 3000;
-
-// Listen using HTTPS server
 app.listen(port, () => {
   console.log(`Server running at ${port}`);
-})
+});
