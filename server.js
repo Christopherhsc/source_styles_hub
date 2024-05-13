@@ -6,23 +6,25 @@ const mongoose = require("mongoose");
 
 const app = express();
 
-// Configure CORS for your front-end domain and allowed methods
-app.use(cors({
-  origin: 'https://sourcestylehub.com', // Set the allowed origin
-  methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'] // Correctly list HTTP methods
-}));
+app.use(
+  cors({
+    origin: "*", // Configure according to your specific needs
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Origin",
+      "X-Requested-With",
+      "Content-Type",
+      "Accept",
+      "Authorization",
+    ],
+  })
+);
 
 app.use(bodyParser.json({ limit: "10mb" }));
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect(process.env.MONGODB_URI);
 mongoose.connection.on("connected", () => {
   console.log("Connected to MongoDB");
-});
-
-// Basic route to check API status
-app.get("/", (req, res) => {
-  res.send("API is running...");
 });
 
 // Import routes
