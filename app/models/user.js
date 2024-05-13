@@ -29,6 +29,10 @@ const UserSchema = new Schema({
       lastVisit: { type: Date, default: Date.now },
     },
   ],
+  loginCount: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const User = mongoose.models.User || mongoose.model("User", UserSchema);

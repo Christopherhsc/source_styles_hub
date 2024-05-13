@@ -8,23 +8,20 @@ const saltRounds = 10;
 
 exports.getUser = (req, res) => {
   User.findById(req.params.id)
-    .select('-password')
+    .select('-password') // Exclude password from the results
     .then(user => {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.json(user);
+      res.json({ user, loginCount: user.loginCount });
     })
     .catch(err => res.status(500).json({ message: "Error retrieving user", error: err }));
 };
 
+
 exports.createUser = (req, res) => {
   let { email, username, imageUrl, password, registrationMethod } = req.body;
-
-  // Convert email to lowercase before saving to the database
-  email = email.toLowerCase();
-
-  console.log(`Registration request received for email: ${email} using method: ${registrationMethod}`);
+  email = email.toLowerCase(); // Normalize the email to lowercase
 
   User.findOne({ email: email })
     .then((existingUser) => {
@@ -34,35 +31,39 @@ exports.createUser = (req, res) => {
 
       const saveOrUpdateUser = (hashedPassword) => {
         if (existingUser && registrationMethod === "GOOGLE") {
+          // Existing user with GOOGLE method, update the info and increment login count
           existingUser.username = username;
           existingUser.imageUrl = imageUrl;
-          if (hashedPassword) existingUser.password = hashedPassword;
-          existingUser
-            .save()
+          if (hashedPassword) existingUser.password = hashedPassword; // Update password if provided
+          existingUser.loginCount += 1; // Increment login count here
+          existingUser.save() // Save the updates
             .then((updatedUser) => res.json(updatedUser))
             .catch((err) => res.status(400).json("Error: " + err));
         } else {
+          // No existing user or not GOOGLE, create new user
           const newUser = new User({
             email,
             username,
             imageUrl,
             registrationMethod,
+            loginCount: 1, // Start with 1 login count for new user
             ...(hashedPassword && { password: hashedPassword }),
           });
 
-          newUser
-            .save()
+          newUser.save() // Save the new user
             .then((user) => res.json(user))
             .catch((err) => res.status(400).json("Error: " + err));
         }
       };
 
+      // Handle password encryption if password is provided
       if (password) {
         bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
           if (err) return res.status(500).json("Error hashing password: " + err);
           saveOrUpdateUser(hashedPassword);
         });
       } else {
+        // If no password is needed (like in GOOGLE login), pass null for hashedPassword
         saveOrUpdateUser(null);
       }
     })
@@ -73,14 +74,11 @@ exports.createUser = (req, res) => {
 
 exports.loginUser = (req, res) => {
   let { email, password } = req.body;
-
-  // Convert email to lowercase for case-insensitive search
-  email = email.toLowerCase();
+  email = email.toLowerCase(); // it's for searching
 
   User.findOne({ email: email })
     .then((user) => {
       if (!user) {
-        console.log("User not found for:", email);
         return res.status(404).json({ message: "User not found" });
       }
 
@@ -93,19 +91,19 @@ exports.loginUser = (req, res) => {
           return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        console.log(`User logged in successfully: ${email}`);
-
-        // Convert the Mongoose document to a plain JavaScript object
-        const userObject = user.toObject();
-
-        // Remove password property from the object before sending it in the response
-        delete userObject.password;
-
-        res.json(userObject);
+        // login count for users
+        user.loginCount += 1;
+        user.save().then(() => {
+          const userObject = user.toObject();
+          delete userObject.password; // Remove password for security
+          res.json(userObject);
+        }).catch(err => {
+          res.status(500).json({ message: "Error updating login count", error: err });
+        });
       });
     })
     .catch((err) => {
-      console.log("Error during login process:", err);
+      console.error("Error during login process:", err);
       res.status(500).json("Error: " + err);
     });
 };
