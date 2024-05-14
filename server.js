@@ -16,6 +16,7 @@ app.use(
       "Content-Type",
       "Accept",
       "Authorization",
+      "user-id",
     ],
   })
 );
