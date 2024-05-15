@@ -165,34 +165,45 @@ exports.trackProfileVisit = async (req, res) => {
   try {
     const { profileUserId } = req.params;
     const { visitorUserId } = req.body;
-
-    if (profileUserId === visitorUserId) {
-      // Prevent counting if the user is viewing their own profile
-      return res
-        .status(200)
-        .json({ message: "Own profile visit, not counted" });
-    }
-
-    const now = new Date();
-    const past24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
+    
     const user = await User.findById(profileUserId);
+
+    // Prevent counting if the user is viewing their own profile
+    if (profileUserId === visitorUserId) {
+      return res.status(200).json({
+        message: "Own profile visit, not counted",
+        totalVisitors: user.visitors.length,
+      });
+    }
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const visitor = user.visitors.find((v) => v.visitorId === visitorUserId);
+    const now = new Date();
+    const past24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    let visitor = user.visitors.find(v => v.visitorId.toString() === visitorUserId);
 
     if (!visitor) {
+      // If no visitor found, add new
       user.visitors.push({ visitorId: visitorUserId, lastVisit: now });
-    } else if (visitor.lastVisit < past24Hours) {
-      visitor.lastVisit = now;
+    } else {
+      // Update last visit if it was more than 24 hours ago
+      if (visitor.lastVisit.getTime() < past24Hours.getTime()) {
+        visitor.lastVisit = now;
+      }
     }
 
     await user.save();
-    res.status(200).json({ message: "Visitor tracked successfully" });
+
+    // Respond with the total number of unique visitors
+    res.status(200).json({
+      message: "Visitor tracked successfully",
+      totalVisitors: user.visitors.length // This sends back the total number of visitors
+    });
   } catch (error) {
+    console.error("Error tracking profile visit:", error);
     res.status(500).json({ message: "Error tracking profile visit", error });
   }
 };
