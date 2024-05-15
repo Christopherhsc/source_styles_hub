@@ -22,12 +22,7 @@ exports.getUser = (req, res) => {
 
 exports.createUser = (req, res) => {
   let { email, username, imageUrl, password, registrationMethod } = req.body;
-
   email = email.toLowerCase();
-
-  console.log(
-    `Registration request received for email: ${email} using method: ${registrationMethod}`
-  );
 
   User.findOne({ email: email })
     .then((existingUser) => {
@@ -41,6 +36,7 @@ exports.createUser = (req, res) => {
           existingUser.imageUrl = imageUrl;
           if (hashedPassword) existingUser.password = hashedPassword;
           existingUser.loginCount += 1;
+
           existingUser
             .save()
             .then((updatedUser) => res.json(updatedUser))
@@ -52,6 +48,7 @@ exports.createUser = (req, res) => {
             imageUrl,
             registrationMethod,
             loginCount: 1,
+            role: 1,
             ...(hashedPassword && { password: hashedPassword }),
           });
 
@@ -79,48 +76,49 @@ exports.createUser = (req, res) => {
 
 exports.loginUser = (req, res) => {
   let { email, password } = req.body;
-
-  // Convert email to lowercase for case-insensitive search
   email = email.toLowerCase();
 
   User.findOne({ email: email })
     .then((user) => {
       if (!user) {
-        console.log("User not found for:", email);
         return res.status(404).json({ message: "User not found" });
       }
 
       bcrypt.compare(password, user.password, (err, isMatch) => {
         if (err) {
-          return res.status(500).json({ message: "Error during authentication" });
+          return res
+            .status(500)
+            .json({ message: "Error during authentication" });
         }
 
         if (!isMatch) {
           return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // User authenticated successfully, increment login count here
-        console.log(`User logged in successfully: ${email}`);
-        user.loginCount += 1;  // Increment the login count
+        // Check and set default role if not set
+        if (user.role === undefined) {
+          user.role = 1; // Set default role as 1
+        }
 
-        user.save()  // Save the updated user document
+        user.loginCount += 1; // Increment the login count
+        user
+          .save() // Save the updated user document
           .then(() => {
             const userObject = user.toObject();
-            delete userObject.password;  // Remove password property before sending response
+            delete userObject.password; // Remove password property before sending response
             res.json(userObject);
           })
-          .catch(err => {
-            console.log("Error saving user:", err);
-            res.status(500).json({ message: "Error saving user data", error: err });
+          .catch((err) => {
+            res
+              .status(500)
+              .json({ message: "Error saving user data", error: err });
           });
       });
     })
     .catch((err) => {
-      console.log("Error during login process:", err);
       res.status(500).json("Error: " + err);
     });
 };
-
 
 exports.proxyProfileImage = async (req, res) => {
   const { userId } = req.query;

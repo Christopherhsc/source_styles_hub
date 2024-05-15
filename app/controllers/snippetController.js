@@ -1,4 +1,5 @@
 const Snippet = require("../models/snippet");
+const User = require('../models/user');
 
 // GET
 exports.getUserSnippets = (req, res) => {
@@ -36,39 +37,71 @@ exports.getSnippetById = (req, res) => {
 };
 
 // POST
-exports.createSnippet = (req, res) => {
-  const {
-    title,
-    picture,
-    pictureWidth,
-    pictureHeight,
-    description,
-    snippetTemplate,
-    snippetStyle,
-    tags,
-    userId,
-    username,
-    email,
-  } = req.body;
+exports.createSnippet = async (req, res) => {
+  try {
+    const {
+      userId,
+      title,
+      picture,
+      pictureWidth,
+      pictureHeight,
+      description,
+      snippetTemplate,
+      snippetStyle,
+      tags,
+      username,
+      email,
+    } = req.body;
 
-  const newSnippet = new Snippet({
-    title,
-    picture,
-    pictureWidth,
-    pictureHeight,
-    description,
-    snippetTemplate,
-    snippetStyle,
-    tags,
-    userId,
-    username,
-    email,
-  });
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-  newSnippet
-    .save()
-    .then(() => res.json("Snippet added!"))
-    .catch((err) => res.status(400).json("Error: " + err));
+    const snippets = await Snippet.find({ userId });
+    let maxSnippets;
+    switch (user.role) {
+      case 1:
+        maxSnippets = 5;
+        break;
+      case 2:
+        maxSnippets = 15;
+        break;
+      case 3:
+        maxSnippets = Infinity; // Admins can create unlimited snippets
+        break;
+      default:
+        return res.status(400).json({ message: "Invalid user role" });
+    }
+
+    if (snippets.length >= maxSnippets && maxSnippets !== Infinity) {
+      return res
+        .status(403)
+        .json({ message: `Limit of ${maxSnippets} snippets reached` });
+    }
+
+    const newSnippet = new Snippet({
+      title,
+      picture,
+      pictureWidth,
+      pictureHeight,
+      description,
+      snippetTemplate,
+      snippetStyle,
+      tags,
+      userId,
+      username,
+      email,
+    });
+
+    await newSnippet.save();
+    res.json("Snippet added!");
+  } catch (err) {
+    console.error("Error creating snippet:", err); // Log detailed error
+    return res
+      .status(500)
+      .json({ message: "Error creating snippet", error: err.toString() });
+  }
 };
 
 // DELETE

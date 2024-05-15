@@ -23,6 +23,11 @@ const UserSchema = new Schema({
     type: String,
     required: [true, "RegistrationMethod is required!"],
   },
+  role: {
+    type: Number,
+    default: 1,
+    required: true,
+  },
   visitors: [
     {
       visitorId: String,
