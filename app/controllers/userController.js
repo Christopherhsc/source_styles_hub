@@ -161,15 +161,10 @@ exports.proxyProfileImage = async (req, res) => {
   }
 };
 
-// app/controllers/userController.js// app/controllers/userController.js
 exports.trackProfileVisit = async (req, res) => {
   try {
     const { profileUserId } = req.params;
     const { visitorUserId } = req.body;
-
-    console.log(
-      `Tracking visit for profile: ${profileUserId} by visitor: ${visitorUserId}`
-    );
 
     if (profileUserId === visitorUserId) {
       return;
@@ -177,13 +172,11 @@ exports.trackProfileVisit = async (req, res) => {
 
     const user = await User.findById(profileUserId);
     if (!user) {
-      console.log("User not found:", profileUserId);
       return res.status(404).json({ message: "User not found" });
     }
 
     const visitorUser = await User.findById(visitorUserId);
     if (!visitorUser) {
-      console.log("Visitor not found:", visitorUserId);
       return res.status(404).json({ message: "Visitor not found" });
     }
 
@@ -192,11 +185,7 @@ exports.trackProfileVisit = async (req, res) => {
 
     let visitor = user.visitors.find((v) => v.visitorId === visitorUserId);
 
-    console.log("Current visitors:", user.visitors);
-    console.log("Found visitor:", visitor);
-
     if (!visitor) {
-      console.log("Adding new visitor");
       user.visitors.push({
         visitorId: visitorUserId,
         username: visitorUser.username,
@@ -205,14 +194,11 @@ exports.trackProfileVisit = async (req, res) => {
       });
     } else {
       if (visitor.lastVisit.getTime() < past24Hours.getTime()) {
-        console.log("Updating last visit for visitor");
         visitor.lastVisit = now;
       }
     }
 
     await user.save();
-
-    console.log("Visitors after update:", user.visitors);
 
     res.status(200).json({
       message: "Visitor tracked successfully",
