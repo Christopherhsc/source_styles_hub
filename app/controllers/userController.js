@@ -161,46 +161,62 @@ exports.proxyProfileImage = async (req, res) => {
   }
 };
 
+// app/controllers/userController.js// app/controllers/userController.js
 exports.trackProfileVisit = async (req, res) => {
   try {
     const { profileUserId } = req.params;
     const { visitorUserId } = req.body;
-    
-    const user = await User.findById(profileUserId);
 
-    // Prevent counting if the user is viewing their own profile
+    console.log(
+      `Tracking visit for profile: ${profileUserId} by visitor: ${visitorUserId}`
+    );
+
     if (profileUserId === visitorUserId) {
-      return res.status(200).json({
-        message: "Own profile visit, not counted",
-        totalVisitors: user.visitors.length,
-      });
+      return;
     }
 
+    const user = await User.findById(profileUserId);
     if (!user) {
+      console.log("User not found:", profileUserId);
       return res.status(404).json({ message: "User not found" });
+    }
+
+    const visitorUser = await User.findById(visitorUserId);
+    if (!visitorUser) {
+      console.log("Visitor not found:", visitorUserId);
+      return res.status(404).json({ message: "Visitor not found" });
     }
 
     const now = new Date();
     const past24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    let visitor = user.visitors.find(v => v.visitorId.toString() === visitorUserId);
+    let visitor = user.visitors.find((v) => v.visitorId === visitorUserId);
+
+    console.log("Current visitors:", user.visitors);
+    console.log("Found visitor:", visitor);
 
     if (!visitor) {
-      // If no visitor found, add new
-      user.visitors.push({ visitorId: visitorUserId, lastVisit: now });
+      console.log("Adding new visitor");
+      user.visitors.push({
+        visitorId: visitorUserId,
+        username: visitorUser.username,
+        imageUrl: visitorUser.imageUrl,
+        lastVisit: now,
+      });
     } else {
-      // Update last visit if it was more than 24 hours ago
       if (visitor.lastVisit.getTime() < past24Hours.getTime()) {
+        console.log("Updating last visit for visitor");
         visitor.lastVisit = now;
       }
     }
 
     await user.save();
 
-    // Respond with the total number of unique visitors
+    console.log("Visitors after update:", user.visitors);
+
     res.status(200).json({
       message: "Visitor tracked successfully",
-      totalVisitors: user.visitors.length // This sends back the total number of visitors
+      totalVisitors: user.visitors.length,
     });
   } catch (error) {
     console.error("Error tracking profile visit:", error);

@@ -31,6 +31,8 @@ const UserSchema = new Schema({
   visitors: [
     {
       visitorId: String,
+      username: String,
+      imageUrl: String,
       lastVisit: { type: Date, default: Date.now },
     },
   ],
